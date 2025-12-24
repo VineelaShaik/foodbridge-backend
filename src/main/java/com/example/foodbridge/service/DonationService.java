@@ -9,6 +9,8 @@ import com.example.foodbridge.repository.DonationRepository;
 import com.example.foodbridge.repository.FoodItemRepository;
 import com.example.foodbridge.repository.NGORepository;
 import com.example.foodbridge.repository.RestaurantRepository;
+import org.springframework.transaction.annotation.Transactional;
+
 
 import org.springframework.stereotype.Service;
 
