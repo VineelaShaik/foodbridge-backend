@@ -1,6 +1,7 @@
 package com.example.foodbridge.controller;
 
 import com.example.foodbridge.dto.RequestDTO;
+import com.example.foodbridge.model.Donation;
 import com.example.foodbridge.model.Request;
 import com.example.foodbridge.service.RequestService;
 import org.springframework.http.ResponseEntity;
@@ -18,35 +19,43 @@ public class RequestController {
         this.requestService = requestService;
     }
 
-    // ✅ Create a new request
+    // ✅ 1. NGO creates a new request
     @PostMapping
     public ResponseEntity<Request> createRequest(@RequestBody RequestDTO dto) {
         Request request = requestService.createRequest(dto);
         return ResponseEntity.ok(request);
     }
 
-    // ✅ Get all requests
+    // ✅ 2. Get all requests
     @GetMapping
     public ResponseEntity<List<Request>> getAllRequests() {
-        List<Request> requests = requestService.getAllRequests();
-        return ResponseEntity.ok(requests);
+        return ResponseEntity.ok(requestService.getAllRequests());
     }
 
-    // ✅ Get request by ID (optional but useful)
+    // ✅ 3. Get request by ID
     @GetMapping("/{id}")
     public ResponseEntity<Request> getRequestById(@PathVariable Long id) {
-        Request request = requestService.getRequestById(id);
-        return ResponseEntity.ok(request);
+        return ResponseEntity.ok(requestService.getRequestById(id));
     }
 
-    // ✅ Update status (for example: pending → approved → completed)
-    @PutMapping("/{id}")
-    public ResponseEntity<Request> updateStatus(@PathVariable Long id, @RequestParam String status) {
-        Request updatedRequest = requestService.updateStatus(id, status);
-        return ResponseEntity.ok(updatedRequest);
+    // ✅ 4. Approve request → Donation is created
+    @PutMapping("/{id}/approve")
+    public ResponseEntity<Donation> approveRequest(
+            @PathVariable Long id,
+            @RequestParam int quantityDonated) {
+
+        Donation donation = requestService.approveRequest(id, quantityDonated);
+        return ResponseEntity.ok(donation);
     }
 
-    // ✅ Delete request (optional)
+    // ✅ 5. Reject request
+    @PutMapping("/{id}/reject")
+    public ResponseEntity<Request> rejectRequest(@PathVariable Long id) {
+        Request rejected = requestService.rejectRequest(id);
+        return ResponseEntity.ok(rejected);
+    }
+
+    // ✅ 6. Delete request (optional)
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteRequest(@PathVariable Long id) {
         requestService.deleteRequest(id);

@@ -1,15 +1,12 @@
 package com.example.foodbridge.service;
 
-import com.example.foodbridge.model.Request;
-import com.example.foodbridge.model.FoodItem;
-import com.example.foodbridge.model.NGO;
 import com.example.foodbridge.dto.RequestDTO;
-import com.example.foodbridge.repository.RequestRepository;
-import com.example.foodbridge.repository.FoodItemRepository;
-import com.example.foodbridge.repository.NGORepository;
+import com.example.foodbridge.model.*;
+import com.example.foodbridge.repository.*;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -19,15 +16,21 @@ public class RequestService {
     private final RequestRepository requestRepo;
     private final FoodItemRepository foodItemRepo;
     private final NGORepository ngoRepo;
+    private final DonationRepository donationRepo;
 
-    public RequestService(RequestRepository requestRepo, FoodItemRepository foodItemRepo, NGORepository ngoRepo) {
+    public RequestService(RequestRepository requestRepo,
+                          FoodItemRepository foodItemRepo,
+                          NGORepository ngoRepo,
+                          DonationRepository donationRepo) {
         this.requestRepo = requestRepo;
         this.foodItemRepo = foodItemRepo;
         this.ngoRepo = ngoRepo;
+        this.donationRepo = donationRepo;
     }
 
-    // ✅ Create a new Request
+    // ✅ 1. NGO creates a Request (ALWAYS PENDING)
     public Request createRequest(RequestDTO dto) {
+
         FoodItem foodItem = foodItemRepo.findById(dto.getFoodItemId())
                 .orElseThrow(() -> new RuntimeException("FoodItem not found"));
 
@@ -37,39 +40,74 @@ public class RequestService {
         Request request = Request.builder()
                 .foodItem(foodItem)
                 .ngo(ngo)
-                .status(dto.getStatus() != null ? dto.getStatus() : Request.Status.PENDING)
+                .status(Request.Status.PENDING)
+                .requestedAt(LocalDateTime.now())
                 .build();
 
         return requestRepo.save(request);
     }
 
-    // ✅ Get all Requests
+    // ✅ 2. Get all Requests
     public List<Request> getAllRequests() {
         return requestRepo.findAll();
     }
 
-    // ✅ Get Request by ID
+    // ✅ 3. Get Request by ID
     public Request getRequestById(Long id) {
         return requestRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
     }
 
-    // ✅ Update Request Status (fixed)
-    public Request updateStatus(Long id, String status) {
-        Request request = requestRepo.findById(id)
+    // ✅ 4. APPROVE request → create Donation
+    public Donation approveRequest(Long requestId, int quantityDonated) {
+
+        Request request = requestRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 
-        try {
-            Request.Status newStatus = Request.Status.valueOf(status.toUpperCase());
-            request.setStatus(newStatus);
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid status value: " + status);
+        if (request.getStatus() != Request.Status.PENDING) {
+            throw new RuntimeException("Request already processed");
         }
 
-        return requestRepo.save(request);
+        FoodItem foodItem = request.getFoodItem();
+
+        if (foodItem.getQuantity() < quantityDonated) {
+            throw new RuntimeException("Insufficient food quantity");
+        }
+
+        // Approve request
+        request.setStatus(Request.Status.APPROVED);
+
+        // Update food item
+        foodItem.setQuantity(foodItem.getQuantity() - quantityDonated);
+        foodItem.setStatus(FoodItem.Status.DONATED);
+
+        // Create donation
+        Donation donation = Donation.builder()
+                .foodItem(foodItem)
+                .ngo(request.getNgo())
+                .restaurant(foodItem.getRestaurant())
+                .quantityDonated(quantityDonated)
+                .donatedAt(LocalDateTime.now())
+                .build();
+
+        return donationRepo.save(donation);
     }
 
-    // ✅ Delete a Request
+    // ✅ 5. Reject request
+    public Request rejectRequest(Long requestId) {
+
+        Request request = requestRepo.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        if (request.getStatus() != Request.Status.PENDING) {
+            throw new RuntimeException("Request already processed");
+        }
+
+        request.setStatus(Request.Status.REJECTED);
+        return request;
+    }
+
+    // ✅ 6. Delete request
     public void deleteRequest(Long id) {
         if (!requestRepo.existsById(id)) {
             throw new RuntimeException("Request not found");

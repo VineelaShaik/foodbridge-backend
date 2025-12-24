@@ -19,13 +19,6 @@ public class DonationController {
         this.service = service;
     }
 
-@PutMapping("/requests/{id}/approve")
-public Donation approveRequest(
-        @PathVariable Long id,
-        @RequestParam int quantityDonated) {
-    return service.approveRequest(id, quantityDonated);
-}
-
 @GetMapping
 public ResponseEntity<List<Donation>> getAll() {
     return ResponseEntity.ok(service.getAll());
