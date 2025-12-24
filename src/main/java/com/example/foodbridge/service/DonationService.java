@@ -35,26 +35,40 @@ public class DonationService {
         this.geoService=geoService;
     }
 
-    public Donation createDonation(DonationDTO dto) {
-        FoodItem foodItem = foodItemRepo.findById(dto.getFoodItemId())
-                .orElseThrow(() -> new RuntimeException("FoodItem not found"));
+@Transactional
+public Donation approveRequest(Long requestId, int quantityDonated) {
 
-        NGO ngo = ngoRepo.findById(dto.getNgoId())
-                .orElseThrow(() -> new RuntimeException("NGO not found"));
+    Request request = requestRepo.findById(requestId)
+        .orElseThrow(() -> new RuntimeException("Request not found"));
 
-        Restaurant restaurant = restaurantRepo.findById(dto.getRestaurantId())
-                .orElseThrow(() -> new RuntimeException("Restaurant not found"));
-
-        Donation donation = Donation.builder()
-                .foodItem(foodItem)
-                .ngo(ngo)
-                .restaurant(restaurant)
-                .quantityDonated(dto.getQuantityDonated())
-                .build();
-        foodItem.setQuantity(foodItem.getQuantity()-dto.getQuantityDonated());
-
-        return donationRepo.save(donation);
+    if (request.getStatus() != Request.Status.PENDING) {
+        throw new RuntimeException("Request already processed");
     }
+
+    FoodItem foodItem = request.getFoodItem();
+
+    if (foodItem.getQuantity() < quantityDonated) {
+        throw new RuntimeException("Insufficient food quantity");
+    }
+
+   
+    request.setStatus(Request.Status.APPROVED);
+
+   
+    foodItem.setQuantity(foodItem.getQuantity() - quantityDonated);
+    foodItem.setStatus(FoodItem.Status.DONATED);
+
+   
+    Donation donation = Donation.builder()
+        .foodItem(foodItem)
+        .ngo(request.getNgo())
+        .restaurant(foodItem.getRestaurant())
+        .quantityDonated(quantityDonated)
+        .build();
+
+    return donationRepo.save(donation);
+}
+
 
     public List<Donation> getAll() {
         return donationRepo.findAll();
