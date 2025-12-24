@@ -19,10 +19,11 @@ public class DonationController {
         this.service = service;
     }
 
- @PostMapping
-public ResponseEntity<Donation> create(@RequestBody DonationDTO dto) {
-    Donation donation = service.createDonation(dto);
-    return ResponseEntity.ok(donation);
+@PutMapping("/requests/{id}/approve")
+public Donation approveRequest(
+        @PathVariable Long id,
+        @RequestParam int quantityDonated) {
+    return service.approveRequest(id, quantityDonated);
 }
 
 @GetMapping
