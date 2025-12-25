@@ -19,26 +19,24 @@ public class RequestController {
         this.requestService = requestService;
     }
 
-    // ✅ 1. NGO creates a new request
     @PostMapping
     public ResponseEntity<Request> createRequest(@RequestBody RequestDTO dto) {
         Request request = requestService.createRequest(dto);
         return ResponseEntity.ok(request);
     }
 
-    // ✅ 2. Get all requests
+
     @GetMapping
     public ResponseEntity<List<Request>> getAllRequests() {
         return ResponseEntity.ok(requestService.getAllRequests());
     }
 
-    // ✅ 3. Get request by ID
+
     @GetMapping("/{id}")
     public ResponseEntity<Request> getRequestById(@PathVariable Long id) {
         return ResponseEntity.ok(requestService.getRequestById(id));
     }
 
-    // ✅ 4. Approve request → Donation is created
     @PutMapping("/{id}/approve")
     public ResponseEntity<Donation> approveRequest(
             @PathVariable Long id,
@@ -48,14 +46,13 @@ public class RequestController {
         return ResponseEntity.ok(donation);
     }
 
-    // ✅ 5. Reject request
+
     @PutMapping("/{id}/reject")
     public ResponseEntity<Request> rejectRequest(@PathVariable Long id) {
         Request rejected = requestService.rejectRequest(id);
         return ResponseEntity.ok(rejected);
     }
 
-    // ✅ 6. Delete request (optional)
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteRequest(@PathVariable Long id) {
         requestService.deleteRequest(id);
